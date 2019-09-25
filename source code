@@ -1,0 +1,96 @@
+# -*- coding: utf-8 -*-
+"""
+Spyder Editor
+
+This is a temporary script file.
+"""
+
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D  
+from matplotlib import cm
+from matplotlib.ticker import LinearLocator, FormatStrFormatter
+import numpy as np
+import tensorflow as tf
+import matplotlib.pyplot as plt
+from sklearn import datasets
+from tensorflow.python.framework import ops
+from scipy import ndimage, signal
+ops.reset_default_graph()
+
+
+# init data
+sess = tf.Session()
+data = np.genfromtxt('smallMNIST.csv',delimiter=',')
+iris = datasets.load_iris()
+# x_vals = np.array([[x[0],x[3]] for x in iris.data])
+# y_vals = np.array([1 if y == 0 else -1 for y in iris.target])
+x_vals = np.array([ np.append(1,x[1::]) for x in data])
+print(x_vals)
+y_vals = np.array([1 if x[0] == 2 else -1 for x in data])
+train_indices = np.random.choice(len(x_vals),int(round(len(x_vals)*0.8)),replace=False)
+test_indices = np.array(list(set(range(len(x_vals))) - set(train_indices)))
+x_vals_train = x_vals[train_indices]
+x_vals_test = x_vals[test_indices]
+y_vals_train = y_vals[train_indices]
+y_vals_test = y_vals[test_indices]
+
+
+batch_size = 100
+x_data = tf.placeholder(shape=[None,785],dtype=tf.float32)
+y_target = tf.placeholder(shape=[None],dtype=tf.float32)
+A = tf.Variable(tf.random_normal(shape=[785,1]))
+b = tf.Variable(tf.random_normal(shape=[1,1]))
+
+model_output = tf.subtract(tf.matmul(x_data,A),b)
+l2_norm = tf.reduce_sum(tf.square(A))
+alpha = tf.constant([0.01])
+classfication_term = tf.reduce_mean(tf.maximum(0.,tf.subtract(1.,tf.multiply(model_output,y_target))))
+loss = tf.add(classfication_term, tf.multiply(alpha,l2_norm))
+
+prediction = tf.sign(model_output)
+accuracy = tf.reduce_mean(tf.cast(tf.equal(prediction,y_target),tf.float32))
+
+my_opt = tf.train.GradientDescentOptimizer(0.01)
+train_step = my_opt.minimize(loss)
+init = tf.global_variables_initializer()
+sess.run(init)
+
+
+# start 
+i = 1
+loss_vec =[]
+train_accuracy =[]
+test_accuracy = []
+
+rand_y = np.transpose(y_vals_train[0::])
+sess.run(train_step,feed_dict={x_data:x_vals_train,y_target:y_vals_train})
+print("Step #{} A = {}, B= {}".format(
+                str(i+1),
+                str(sess.run(A)),
+                str(sess.run(b))
+            )    
+        )
+        
+array=A.eval(sess)
+
+image = np.reshape(array[1::],(-1,28))
+plt.imshow(image)
+plt.title("original image")
+plt.show()
+
+
+import matplotlib.image as image
+greyim=image.imread("/Users/xujingye/Desktop/two.png")
+h = greyim.shape[0]
+w = greyim.shape[1]
+for y in range(0,h):
+    for x in range(0,w):
+        s = sum(greyim[y][x])/3
+        greyim[y][x] = s
+plt.imshow(greyim)
+
+testIm = ndimage.gaussian_filter(greyim[:,:,0], sigma=0)
+
+
+plt.imshow()
+plt.show()
